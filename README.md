@@ -121,3 +121,4 @@ For Firebase setup issues, see `FIREBASE-SETUP.md`
 For general development, check the console logs and documentation
 # SkillcredProject01
 # SkillcredProject02
+# SkillcredProject02
