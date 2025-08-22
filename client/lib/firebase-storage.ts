@@ -247,25 +247,48 @@ export class FirebaseStorageService {
       const result = await listAll(userFilesRef);
       
       const fileMetadataPromises = result.items.map(async (itemRef) => {
-        const metadata = await getMetadata(itemRef);
-        const downloadURL = await getDownloadURL(itemRef);
-        
-        return {
-          name: metadata.name,
-          size: metadata.size || 0,
-          type: metadata.contentType || 'unknown',
-          downloadURL,
-          fullPath: metadata.fullPath,
-          timeCreated: metadata.timeCreated,
-          updated: metadata.updated,
-          md5Hash: metadata.md5Hash
-        } as FileMetadata;
+        try {
+          const metadata = await getMetadata(itemRef);
+          const downloadURL = await getDownloadURL(itemRef);
+          
+          return {
+            name: metadata.name,
+            size: metadata.size || 0,
+            type: metadata.contentType || 'unknown',
+            downloadURL,
+            fullPath: metadata.fullPath,
+            timeCreated: metadata.timeCreated,
+            updated: metadata.updated,
+            md5Hash: metadata.md5Hash
+          } as FileMetadata;
+        } catch (itemError) {
+          console.warn('Error getting metadata for file:', itemError);
+          // Return a basic file object if metadata fails
+          return {
+            name: itemRef.name,
+            size: 0,
+            type: 'unknown',
+            downloadURL: '',
+            fullPath: itemRef.fullPath,
+            timeCreated: new Date().toISOString(),
+            updated: new Date().toISOString(),
+            md5Hash: ''
+          } as FileMetadata;
+        }
       });
 
       return await Promise.all(fileMetadataPromises);
     } catch (error) {
       console.error('Error getting user files:', error);
-      throw error;
+      
+      // If it's a permission error, return empty array
+      if (error instanceof Error && error.message.includes('permission')) {
+        console.warn('Storage permission denied, returning empty file list');
+        return [];
+      }
+      
+      // For other errors, return empty array
+      return [];
     }
   }
 
@@ -337,6 +360,14 @@ export class FirebaseStorageService {
       };
     } catch (error) {
       console.error('Error getting storage usage:', error);
+      
+      // If it's a permission error, return default values
+      if (error instanceof Error && error.message.includes('permission')) {
+        console.warn('Storage permission denied, using default values');
+        return { usedBytes: 0, fileCount: 0 };
+      }
+      
+      // For other errors, return default values
       return { usedBytes: 0, fileCount: 0 };
     }
   }
