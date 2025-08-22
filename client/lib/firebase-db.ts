@@ -12,7 +12,8 @@ import {
   limit,
   onSnapshot,
   serverTimestamp,
-  increment
+  increment,
+  setDoc
 } from "firebase/firestore";
 import { db, analytics } from "./firebase";
 import { logEvent } from "firebase/analytics";
@@ -169,6 +170,27 @@ export class UserProfileService {
   static async updateStats(uid: string, analysisType: string): Promise<void> {
     try {
       const userRef = doc(db, USERS_COLLECTION, uid);
+      
+      // Check if user document exists, if not create it
+      const userDoc = await getDoc(userRef);
+      if (!userDoc.exists()) {
+        // Create initial user profile
+        await setDoc(userRef, {
+          uid,
+          email: '', // Will be updated when available
+          displayName: '',
+          createdAt: serverTimestamp(),
+          lastActive: serverTimestamp(),
+          stats: {
+            totalAnalyses: 0,
+            textAnalyses: 0,
+            fileAnalyses: 0,
+            urlAnalyses: 0,
+            batchAnalyses: 0
+          }
+        });
+      }
+      
       const updates: any = {
         'stats.totalAnalyses': increment(1),
         lastActive: serverTimestamp()
