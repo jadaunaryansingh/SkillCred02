@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Loader2, Brain, Languages, BarChart3, Sparkles, FileText, Upload,
   Link as LinkIcon, Image, FileImage, Globe, Zap, LogOut, User,
-  Home, Heart, Save
+  Home, Heart, Save, AlertCircle
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SentimentAnalysisResponse } from "@shared/api";
@@ -19,6 +19,7 @@ import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { SentimentService, FirebaseAnalyticsService } from "@/lib/firebase-db";
 import { FirebaseStorageService } from "@/lib/firebase-storage";
+import FirebaseStatus from "@/components/FirebaseStatus";
 
 export default function Index() {
   const [text, setText] = useState("");
@@ -28,6 +29,7 @@ export default function Index() {
   const [result, setResult] = useState<SentimentAnalysisResponse | null>(null);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("text");
+  const [firebaseStatus, setFirebaseStatus] = useState<'checking' | 'accessible' | 'inaccessible'>('checking');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [user] = useAuthState(auth);
 
@@ -38,6 +40,21 @@ export default function Index() {
       console.error("Sign out error:", error);
     }
   };
+
+  const checkFirebaseStatus = useCallback(async () => {
+    try {
+      const accessCheck = await SentimentService.checkFirebaseAccess();
+      setFirebaseStatus(accessCheck.accessible ? 'accessible' : 'inaccessible');
+    } catch (err) {
+      setFirebaseStatus('inaccessible');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      checkFirebaseStatus();
+    }
+  }, [user, checkFirebaseStatus]);
 
   const handleAnalyze = useCallback(async () => {
     // Client-side validation
@@ -270,6 +287,35 @@ export default function Index() {
           </div>
         </div>
       </motion.div>
+
+      {/* Firebase Status Notification */}
+      {firebaseStatus === 'inaccessible' && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-yellow-900/20 border-b border-yellow-500/30"
+        >
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-yellow-300">
+                <AlertCircle className="h-4 w-4" />
+                <span className="text-sm">
+                  <strong>Firebase Offline:</strong> Your sentiment analysis results are being saved locally. 
+                  They will be synced to the cloud when Firebase access is restored.
+                </span>
+              </div>
+              <Button
+                onClick={checkFirebaseStatus}
+                variant="outline"
+                size="sm"
+                className="border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 hover:border-yellow-500"
+              >
+                Check Status
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -651,7 +697,14 @@ export default function Index() {
                         transition={{ delay: 1.5 }}
                       >
                         Analysis completed in {result.processingTimeMs}ms
-                        {user && <span className="ml-2">• Saved to your dashboard</span>}
+                        {user && (
+                          <span className="ml-2">
+                            {firebaseStatus === 'accessible' 
+                              ? '• Saved to your dashboard' 
+                              : '• Saved locally (will sync when Firebase is restored)'
+                            }
+                          </span>
+                        )}
                       </motion.div>
                     </CardContent>
                   </Card>
@@ -749,6 +802,8 @@ export default function Index() {
                 ))}
               </CardContent>
             </Card>
+
+            <FirebaseStatus />
           </motion.div>
         </div>
       </div>

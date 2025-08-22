@@ -18,6 +18,14 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
     }
     
+    // Allow authenticated users to create new documents in any collection
+    // This is needed for initial document creation
+    match /{collection}/{document} {
+      allow create: if request.auth != null && 
+        (collection == "sentiments" || collection == "analytics") &&
+        request.resource.data.uid == request.auth.uid;
+    }
+    
     // Deny all other operations
     match /{document=**} {
       allow read, write: if false;
