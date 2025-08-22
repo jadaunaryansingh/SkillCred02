@@ -37,30 +37,50 @@ export default function Dashboard() {
     try {
       setLoading(true);
       
-      // Load user profile
-      const profile = await UserProfileService.getProfile(user.uid);
-      if (profile) {
-        setUserProfile(profile);
-      } else {
-        // Create profile if it doesn't exist
-        await UserProfileService.createProfile(user.uid, {
-          email: user.email || '',
-          displayName: user.displayName,
-          photoURL: user.photoURL
-        });
+      // Load user profile with error handling
+      try {
+        const profile = await UserProfileService.getProfile(user.uid);
+        if (profile) {
+          setUserProfile(profile);
+        } else {
+          // Create profile if it doesn't exist
+          await UserProfileService.createProfile(user.uid, {
+            email: user.email || '',
+            displayName: user.displayName,
+            photoURL: user.photoURL
+          });
+        }
+      } catch (profileError) {
+        console.warn('Profile loading failed, using defaults:', profileError);
+        setUserProfile(null);
       }
 
-      // Load recent sentiments
-      const sentiments = await SentimentService.getUserSentiments(user.uid, 10);
-      setRecentSentiments(sentiments);
+      // Load recent sentiments with error handling
+      try {
+        const sentiments = await SentimentService.getUserSentiments(user.uid, 10);
+        setRecentSentiments(sentiments);
+      } catch (sentimentsError) {
+        console.warn('Sentiments loading failed, using empty array:', sentimentsError);
+        setRecentSentiments([]);
+      }
 
-      // Load favorites
-      const favorites = await SentimentService.getFavoriteSentiments(user.uid);
-      setFavoritesSentiments(favorites);
+      // Load favorites with error handling
+      try {
+        const favorites = await SentimentService.getFavoriteSentiments(user.uid);
+        setFavoritesSentiments(favorites);
+      } catch (favoritesError) {
+        console.warn('Favorites loading failed, using empty array:', favoritesError);
+        setFavoritesSentiments([]);
+      }
 
-      // Load storage usage
-      const usage = await FirebaseStorageService.getStorageUsage(user.uid);
-      setStorageUsage(usage);
+      // Load storage usage with error handling
+      try {
+        const usage = await FirebaseStorageService.getStorageUsage(user.uid);
+        setStorageUsage(usage);
+      } catch (storageError) {
+        console.warn('Storage usage loading failed, using defaults:', storageError);
+        setStorageUsage({ usedBytes: 0, fileCount: 0 });
+      }
 
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -72,20 +92,29 @@ export default function Dashboard() {
   const setupRealTimeListeners = () => {
     if (!user) return;
 
-    // Real-time profile updates
-    const unsubscribeProfile = UserProfileService.subscribeToProfile(user.uid, (profile) => {
-      if (profile) setUserProfile(profile);
-    });
+    try {
+      // Real-time profile updates
+      const unsubscribeProfile = UserProfileService.subscribeToProfile(user.uid, (profile) => {
+        if (profile) setUserProfile(profile);
+      });
 
-    // Real-time sentiments updates
-    const unsubscribeSentiments = SentimentService.subscribeToUserSentiments(user.uid, (sentiments) => {
-      setRecentSentiments(sentiments);
-    });
+      // Real-time sentiments updates
+      const unsubscribeSentiments = SentimentService.subscribeToUserSentiments(user.uid, (sentiments) => {
+        setRecentSentiments(sentiments);
+      });
 
-    return () => {
-      unsubscribeProfile();
-      unsubscribeSentiments();
-    };
+      return () => {
+        try {
+          unsubscribeProfile();
+          unsubscribeSentiments();
+        } catch (error) {
+          console.warn('Error unsubscribing from listeners:', error);
+        }
+      };
+    } catch (error) {
+      console.warn('Error setting up real-time listeners:', error);
+      return () => {}; // Return empty cleanup function
+    }
   };
 
   const toggleFavorite = async (sentimentId: string, currentFavorite: boolean) => {
