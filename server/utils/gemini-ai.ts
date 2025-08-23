@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize Gemini AI
+// Initialize Gemini AI (optional - will use fallback if not available)
 const genAI = process.env.GEMINI_API_KEY
   ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
   : null;
@@ -14,8 +14,8 @@ export async function generateSummaryInsight(
   confidence: number
 ): Promise<string> {
   if (!genAI) {
-    console.log('Gemini AI not initialized, using fallback summary');
-    return getFallbackSummary(sentimentLabel, confidence, detectedLanguage);
+    console.log('Gemini AI not initialized, using enhanced fallback summary');
+    return generateEnhancedFallbackSummary(originalText, sentimentLabel, confidence, detectedLanguage);
   }
 
   try {
@@ -45,14 +45,14 @@ export async function generateSummaryInsight(
       return text.trim();
     } else {
       console.log('Empty AI response, using fallback');
-      return getFallbackSummary(sentimentLabel, confidence, detectedLanguage);
+      return generateEnhancedFallbackSummary(originalText, sentimentLabel, confidence, detectedLanguage);
     }
   } catch (error) {
     console.error('Gemini AI error:', error);
     if (error instanceof Error && error.message.includes('API key')) {
       console.error('Invalid API key detected');
     }
-    return getFallbackSummary(sentimentLabel, confidence, detectedLanguage);
+    return generateEnhancedFallbackSummary(originalText, sentimentLabel, confidence, detectedLanguage);
   }
 }
 
@@ -93,21 +93,42 @@ export async function translateText(
   }
 }
 
-function getFallbackSummary(sentimentLabel: string, confidence: number, language: string): string {
-  const descriptions = {
-    POSITIVE: "an optimistic and favorable view",
-    NEGATIVE: "concerns or dissatisfaction",
-    NEUTRAL: "a balanced or objective perspective"
+// Enhanced fallback summary generator that doesn't require external APIs
+function generateEnhancedFallbackSummary(
+  originalText: string, 
+  sentimentLabel: string, 
+  confidence: number, 
+  language: string
+): string {
+  const textLength = originalText.length;
+  const confidencePercent = Math.round(confidence * 100);
+  
+  const sentimentDescriptions = {
+    POSITIVE: {
+      high: "This text conveys a strongly positive and optimistic tone",
+      medium: "The content shows a positive and favorable perspective",
+      low: "There are positive elements present in this text"
+    },
+    NEGATIVE: {
+      high: "This text expresses significant negative sentiment and concerns",
+      medium: "The content indicates dissatisfaction or negative feelings",
+      low: "There are some negative aspects in this text"
+    },
+    NEUTRAL: {
+      high: "This text maintains a balanced and objective tone throughout",
+      medium: "The content presents a neutral and factual perspective",
+      low: "The text appears to be relatively neutral in tone"
+    }
   };
   
-  return `This ${language} text expresses ${sentimentLabel.toLowerCase()} sentiment with ${Math.round(confidence * 100)}% confidence, indicating ${descriptions[sentimentLabel as keyof typeof descriptions] || "mixed emotions"}.`;
-}
-
-function getSentimentDescription(sentiment: string): string {
-  switch (sentiment.toUpperCase()) {
-    case 'POSITIVE': return 'an upbeat and favorable';
-    case 'NEGATIVE': return 'a critical or unfavorable';
-    case 'NEUTRAL': return 'a balanced and objective';
-    default: return 'a mixed';
-  }
+  const confidenceLevel = confidence > 0.7 ? 'high' : confidence > 0.4 ? 'medium' : 'low';
+  const baseDescription = sentimentDescriptions[sentimentLabel as keyof typeof sentimentDescriptions]?.[confidenceLevel] || 
+                         sentimentDescriptions.NEUTRAL.medium;
+  
+  const languageNote = language !== 'en' ? ` (detected language: ${language})` : '';
+  const lengthNote = textLength > 200 ? " The analysis covers substantial content." : 
+                    textLength > 50 ? " The analysis covers moderate content." : 
+                    " The analysis covers brief content.";
+  
+  return `${baseDescription}.${languageNote}${lengthNote} Confidence level: ${confidencePercent}%.`;
 }
