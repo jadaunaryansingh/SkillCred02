@@ -1,0 +1,11 @@
+# Google Cloud Natural Language API
+# Get your API key from: https://console.cloud.google.com/apis/credentials
+GOOGLE_CLOUD_API_KEY=your_google_cloud_api_key_here
+
+# Gemini AI (optional - for enhanced summaries)
+# Get your API key from: https://makersuite.google.com/app/apikey
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# Other environment variables
+NODE_ENV=development
+PORT=3001

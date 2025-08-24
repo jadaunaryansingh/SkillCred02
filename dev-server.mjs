@@ -1,11 +1,10 @@
 // Development server for API endpoints
 // Run with: node dev-server.mjs
 
-import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { handleFileAnalysis, handleURLAnalysis, handleMultiInputAnalysis, uploadMiddleware } from './server/routes/enhanced-sentiment.js';
-import { upload } from './server/utils/file-processing.js';
+import { uploadMultiInput } from './server/utils/file-processing.js';
 import { handleSentimentAnalysis } from './server/routes/sentiment.js';
 import { handleGeminiTest } from './server/routes/test-gemini.js';
 import { handleDemo } from './server/routes/demo.js';
@@ -26,7 +25,7 @@ app.get("/api/ping", (req, res) => {
 app.post("/api/sentiment", handleSentimentAnalysis);
 app.post("/api/sentiment/file", uploadMiddleware, handleFileAnalysis);
 app.post("/api/sentiment/url", handleURLAnalysis);
-app.post("/api/sentiment/multi", upload.single('file'), handleMultiInputAnalysis);
+app.post("/api/sentiment/multi", uploadMultiInput, handleMultiInputAnalysis);
 app.post("/api/test-gemini", handleGeminiTest);
 app.post("/api/demo", handleDemo);
 

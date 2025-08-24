@@ -19,12 +19,16 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
+          "fieldPath": "favorite",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "uid",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "favorite",
-          "order": "ASCENDING"
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
         }
       ]
     }

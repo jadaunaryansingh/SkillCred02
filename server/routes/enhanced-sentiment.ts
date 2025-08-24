@@ -41,8 +41,21 @@ export const handleFileAnalysis: RequestHandler = async (req, res) => {
     
     // Step 3: Analyze sentiment
     const textToAnalyze = translatedText || text;
+    console.log('Analyzing sentiment for text:', {
+      originalLength: text.length,
+      translatedLength: translatedText?.length || 0,
+      textToAnalyzeLength: textToAnalyze.length,
+      preview: textToAnalyze.substring(0, 200) + '...'
+    });
+    
     const sentimentScores = await analyzeSentiment(textToAnalyze);
     const primarySentiment = getPrimarySentiment(sentimentScores);
+    
+    console.log('Sentiment analysis results:', {
+      scores: sentimentScores,
+      primary: primarySentiment,
+      textLength: textToAnalyze.length
+    });
     
     // Step 4: Generate AI summary
     const summary = await generateSummaryInsight(
@@ -133,8 +146,21 @@ export const handleURLAnalysis: RequestHandler = async (req, res) => {
     
     // Step 3: Analyze sentiment
     const textToAnalyze = translatedText || text;
+    console.log('Analyzing sentiment for text:', {
+      originalLength: text.length,
+      translatedLength: translatedText?.length || 0,
+      textToAnalyzeLength: textToAnalyze.length,
+      preview: textToAnalyze.substring(0, 200) + '...'
+    });
+    
     const sentimentScores = await analyzeSentiment(textToAnalyze);
     const primarySentiment = getPrimarySentiment(sentimentScores);
+    
+    console.log('Sentiment analysis results:', {
+      scores: sentimentScores,
+      primary: primarySentiment,
+      textLength: textToAnalyze.length
+    });
     
     // Step 4: Generate AI summary
     const summary = await generateSummaryInsight(
@@ -240,8 +266,21 @@ export const handleMultiInputAnalysis: RequestHandler = async (req, res) => {
     
     // Step 3: Analyze sentiment
     const textToAnalyze = translatedText || finalText;
+    console.log('Analyzing sentiment for text:', {
+      originalLength: finalText.length,
+      translatedLength: translatedText?.length || 0,
+      textToAnalyzeLength: textToAnalyze.length,
+      preview: textToAnalyze.substring(0, 200) + '...'
+    });
+    
     const sentimentScores = await analyzeSentiment(textToAnalyze);
     const primarySentiment = getPrimarySentiment(sentimentScores);
+    
+    console.log('Sentiment analysis results:', {
+      scores: sentimentScores,
+      primary: primarySentiment,
+      textLength: textToAnalyze.length
+    });
     
     // Step 4: Generate AI summary
     const summary = await generateSummaryInsight(
